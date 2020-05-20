@@ -102,9 +102,9 @@
 var analyzer = {};
 analyzer.Questions = [];
 analyzer.Categories = [];
-analyzer.AddCategory = function(Label, Description, Dislikes, CommunicationTips, Color)
+analyzer.AddCategory = function(Label, Statements, Description, Motivations, Dislikes, CommunicationTips, Color)
 {
-	var category = { Id:this.Categories.length, Label:Label, Description:Description, Dislikes:Dislikes, CommunicationTips:CommunicationTips, Score:0, Color:Color };
+	var category = { Id:this.Categories.length, Label:Label, Statements:Statements, Description:Description, Motivations:Motivations, Dislikes:Dislikes, CommunicationTips:CommunicationTips, Score:0, Color:Color };
 	this.Categories.push(category);
 	return category;
 };
@@ -253,7 +253,7 @@ analyzer.RenderGraph = function()
 	
 	var code = '';
 	var explanation_code = '<p>You are <strong style="color:'+dominantCategory.Color+'">'+dominantCategory.Label+'</strong>!</p>';
-	explanation_code += '<p>As you read the breakdown below, remember - while this is your <em>dominant</em> color, we may change and adjust to the situation. The other colors in your breakdown also play a factor in who you are and how you respond to situations.</p><br/><br/>';
+	explanation_code += '<p>As you read the breakdown below, remember - while this is your <em>dominant</em> color, we are also <em>a blend of all the colors.</em> We adjust to the situation. The other colors in your breakdown also play a factor in who you are and how you respond to situations. The descriptions below describe extremes - someone who is just one color.</p><br/><br/>';
 	var runningPct = 0;
 	for(var i=0;i<categories.length;i++)
 	{
@@ -266,10 +266,12 @@ analyzer.RenderGraph = function()
 				pct -= (runningPct-100);
 			}
 			code += '<div class="Bar" style="height:'+Math.round((graphHeight - margin) * categories[i].Score/dominantCategory.Score)+'px;width:'+width+'px;left:'+(i*(width+margin) + Math.round(margin/2)) +'px;background:'+categories[i].Color+'"><div class="BarLabel">'+pct+'%</div></div>';
-			explanation_code += '<p><strong style="color:'+categories[i].Color+'">'+categories[i].Label+':</strong><br/>'+categories[i].Description+'</p>';
-			explanation_code += '<p><strong>Dislikes: </strong>'+categories[i].Dislikes+'</p>';
-			explanation_code += '<p><strong>Tips when communicating with '+categories[i].Label+': </strong>'+categories[i].CommunicationTips+'</p><br/>';
 		}
+		explanation_code += '<p><strong style="color:'+categories[i].Color+'">'+categories[i].Label+': </strong><em>'+categories[i].Statements+'</em></p>';
+		explanation_code += '<p>'+categories[i].Description+'</p>';
+		explanation_code += '<p><strong>Motivations: </strong>'+categories[i].Motivations+'</p>';
+		explanation_code += '<p><strong>Dislikes: </strong>'+categories[i].Dislikes+'</p>';
+		explanation_code += '<p><strong>Tips when communicating with '+categories[i].Label+': </strong>'+categories[i].CommunicationTips+'</p><br/>';
 	}
 	document.getElementById('Graph').innerHTML = code;
 	document.getElementById('Explanation').innerHTML = explanation_code;
@@ -315,6 +317,25 @@ analyzer.Initialize = function()
 		category_color_dictionary[categories_colors_labels[i]] = categories_colors_values[i];
 	}
 	
+	var category_statement_dictionary = [];
+	const category_statements = data_statements.split(/\r?\n/);
+	if (category_statements.length<1)
+	{
+		console.log("Data description not complete.");
+		return;
+	}
+	const categories_statements_labels = category_statements[0].split('|');
+	const categories_statements_values = category_statements[1].split('|');
+	if (categories_statements_labels.length != categories_statements_values.length && categories_statements_labels.length != category_questions.length)
+	{
+		console.log("Data statements count mismatch.");
+		return;
+	}
+	for(var i=0;i<categories_statements_labels.length;i++)
+	{
+		category_statement_dictionary[categories_statements_labels[i]] = categories_statements_values[i];
+	}
+	
 	var category_description_dictionary = [];
 	const category_descriptions = data_descriptions.split(/\r?\n/);
 	if (category_descriptions.length<1)
@@ -332,6 +353,25 @@ analyzer.Initialize = function()
 	for(var i=0;i<categories_descriptions_labels.length;i++)
 	{
 		category_description_dictionary[categories_descriptions_labels[i]] = categories_descriptions_values[i];
+	}
+	
+	var category_motivations_dictionary = [];
+	const category_motivations = data_motivations.split(/\r?\n/);
+	if (category_motivations.length<1)
+	{
+		console.log("Data motivations not complete.");
+		return;
+	}
+	const categories_motivations_labels = category_motivations[0].split('|');
+	const categories_motivations_values = category_motivations[1].split('|');
+	if (categories_motivations_labels.length != categories_motivations_values.length && categories_motivations_labels.length != category_questions.length)
+	{
+		console.log("Data motivations count mismatch.");
+		return;
+	}
+	for(var i=0;i<categories_motivations_labels.length;i++)
+	{
+		category_motivations_dictionary[categories_motivations_labels[i]] = categories_motivations_values[i];
 	}
 	
 	var category_dislikes_dictionary = [];
@@ -375,7 +415,7 @@ analyzer.Initialize = function()
 	var categories = [];
 	for(var i=0;i<categories_labels.length;i++)
 	{
-		var category = this.AddCategory(categories_labels[i], category_description_dictionary[categories_labels[i]], category_dislikes_dictionary[categories_labels[i]], category_communication_tips_dictionary[categories_labels[i]], category_color_dictionary[categories_labels[i]]);
+		var category = this.AddCategory(categories_labels[i], category_statement_dictionary[categories_labels[i]], category_description_dictionary[categories_labels[i]], category_motivations_dictionary[categories_labels[i]], category_dislikes_dictionary[categories_labels[i]], category_communication_tips_dictionary[categories_labels[i]], category_color_dictionary[categories_labels[i]]);
 		categories.push(category);
 	}
 	
@@ -433,9 +473,17 @@ const data_colors =
 `red dominant|yellow dominant|blue dominant|green dominant|purple dominant
 #CC0000|#DDDD00|#0000CC|#00CC33|#9933FF`
 
+const data_statements =
+`red dominant|yellow dominant|blue dominant|green dominant|purple dominant
+"Go, go, go. Let's get it done. Get to the point. Let's get to a decision."|"This is really exciting! You should totally be a part of this. Let's come up with ways of making it even better!"|"Let's look at the data. The numbers and trends show we need to do it this way. It doesn't make sense to do it in that order..."|"Let me get back to my desk where I can focus on this. Are we all in agreement? You are good at this, do you think you could help out here? That's not how I'd do it myself, but if you need me to get it done that way, I will."|"What if we did it differently? Why do we need to do it this way? We can earn their trust if we're bold and tell them the truth instead of tiptoe around it. Come check out what I've been working on..."`
+
 const data_descriptions =
 `red dominant|yellow dominant|blue dominant|green dominant|purple dominant
-Red Dominant personalities prefer being leaders, or active and visible roles. They are confident and proud of the work they produce and get the spotlight (though they may not be actively seeking it.) CEOs, Politicians, Frontmen to Bands are stereotypically 'red dominant' because they are decisive, and want to take action. They are specific and direct with language.|Yellow Dominant personalities are expressive and in-touch with their emotions (not to be confused with "being emotional.") They enjoy brainstorming, and being around others. They crave the spotlight and like being complimented for their creativity and ideas. Being isolated is more of a challenge, and when they're in groups they can sense when someone is unhappy. When they lead, they like for everyone to understand the purpose and meaning for what is being done.|Blue dominant personalities are data-driven deep thinkers. They are analytical and precise. They may be more introverted - but more specifically, they prefer to have their space in order to focus. They are very organized, punctual and methodical. They take fewer risks because they care about data and patterns. They may either outright dislike or completely avoid arguments that touch on emotions and feelings, and just want facts. This may sometimes create the impression they are "cold" but the reality is they are adept at separating emotion from action. They are very logical and deliberate.|Green dominant personalities are more relaxed and patient. They prefer to be part of strong teams but may avoid leading. They want to be recognized for their work. They are easy to get along with and are social yet introverted. They are understanding and agreeable, and great facilitators. They are reasonable and aid through conflict. They may have the tendency to say 'yes' when they truly mean 'no.' Their body language and attitude will show their truly feeling which may not line up with what they are expressing. They take their time with things and take a democratic approach. They seek consensus. They like to read people and can detect insincerity.|Purple dominant personalities enjoy leadership but in an indirect way. They like to "save the day" and like to surprise people with results. They may not always discuss their thoughts until the end of a discussion, or may not discuss what they are working on until it's ready to see. Reactions are important to them. They dislike doing things the same way. They like to break the status quo, and find new and disruptive ways. They like to be bold and ambitious, and tell it like it is. Sometimes they may overstep. They seek affirmation but do so subtly. They want their work to be appreciated but are also humble. They like to take a rebel approach - they don't like to be given specific instructions on how to do things, and prefer to find their own path. In fact, they may have knee jerk reactions or struggle when told exactly what to do. They enjoy being in groups, enjoy being social, but may create the impression of being absent.`
+Red Dominant personalities prefer being leaders, or active and visible roles. They are confident and express pride in their work. The way they communicate will get them the spotlight (without actively seeking it.) CEOs, Politicians, Coaches are 'red dominant' because they are decisive, and want to take action. They are specific and direct with language.|Yellow Dominant personalities are expressive and in-touch with their emotions (not to be confused with "being emotional.") They enjoy brainstorming, and being around others. They crave the spotlight and like being complimented for their creativity and ideas. Being isolated is more of a challenge, and when they're in groups they can sense when someone is unhappy. When they lead, they like for everyone to understand the purpose and meaning for what is being done.|Blue dominant personalities are data-driven deep thinkers. They are analytical and precise. They may be more introverted - but more specifically, they prefer to have their space in order to focus. They are very organized, punctual and methodical. They take fewer risks because they care about data and patterns. They may either outright dislike or completely avoid arguments that touch on emotions and feelings, and just want facts. This may sometimes create the impression they are "cold" but the reality is they are adept at separating emotion from action. They are very logical and deliberate.|Green dominant personalities internalize their passion. They are patient and prefer to operate with structure and clear guidelines. They generally prefer to have expectations clearly laid out. They prefer to be part of strong teams but don't always seek to lead - however, they appreciate recognition for their specific contribution. They prefer their own environment and space (though not necessarily solitude.) They are easy to get along with and are social yet introverted. They are understanding and agreeable, and great facilitators. They are reasonable and aid through conflict. They don't want to be the reason something is held up, and so are inclined to sacrifice how they feel in order to help things move forward. They take their time prefer a democratic approach, seeking consensus. They like to read people and can detect insincerity.|Purple dominant personalities enjoy leadership but in an indirect way. They like to "save the day" and like to surprise people with results. They may not always discuss their thoughts until the end of a discussion, or may not discuss what they are working on until it's ready to see. Reactions are important to them. They dislike doing things the same way. They like to break the status quo, and find new and disruptive ways. They like to be bold and ambitious, and tell it like it is. Sometimes they may overstep. They seek affirmation but do so subtly. They want their work to be appreciated but are also humble. They like to take a rebel approach - they don't like to be given specific instructions on how to do things, and prefer to find their own path. In fact, they may have knee jerk reactions or struggle when told exactly what to do. They enjoy being in groups, enjoy being social, but may create the impression of being absent.`
+
+const data_motivations =
+`red dominant|yellow dominant|blue dominant|green dominant|purple dominant
+They don't need parameters because they are confident their own parameters will more than suffice. Their motivation is internal, and they express it outwardly.|Knowing the parameters may help them, but parameters should be tied to a sense of purpose. Their motivation comes from the outside and they show it outwardly.|Their motivation is external, and they internalize it. Knowing the parameters is important because it's how they measure success.|They appreciate parameters, but mostly feel it will help everyone else. Their motivation comes internally, and stays internal.|They don't want parameters. If they know of the parameters, they'll try to shake them up, find flaws, or find a different set of parameters. Their motivation comes from the external, but with a twist: They use it as a recipe for what <em>not</em> to do. Their motivation is mostly internal, but externalizes when showing the results they've produced.`
 
 const data_dislikes =
 `red dominant|yellow dominant|blue dominant|green dominant|purple dominant
