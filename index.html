@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<title>Personality Spectrum</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
+<meta property="og:title" content="Personality Spectrum" />
+<meta property="og:description" content="communication is hard. with a simple system, it doesn't have to be." />
+<meta property="og:image" content="http://www.alishahnovin.com/personalityspectrum/preview.png" />
+<meta property="og:url" content="http://www.alishahnovin.com/personalityspectrum" />
+<style>
+	body { font-family: 'Montserrat', sans-serif;
+		text-transform:lowercase; }
+	div { margin: auto;text-align:center; }
+	p { font-size:1.1em; }
+	button 
+	{
+		font-family: 'Montserrat', sans-serif;
+		margin:5px;
+		display:inline-block;
+		cursor:pointer;
+		background:#0099CC;
+		color:#FFFFFF;
+		border:none;
+		padding:10px;
+		border-radius: 10px;
+		outline:none;
+		font-size:1.4em;
+		text-transform:lowercase;
+	}
+	button:active { background:#0088AA; }
+	button.checked { background:#009966; }
+	button.check
+	{
+		background:transparent;
+		border:none;
+		font-weight:bold;
+		background:#00CC99;
+		color:#FFFFFF;
+		height:100px;
+		width:100px;
+		border-radius: 50px;
+	}
+	button.check:active { background:#009966; }
+	button.check:disabled { background:#CCCCCC;display:none; }
+	ol { text-align:left; display: inline-block; font-size:1.0em; margin-bottom:35px; }
+	#Intro { width:50%; padding-top:50px; }
+	#Intro p { font-size:1.1em;text-align:left; }
+	
+	#Analyzer { display:none; padding-top:100px; }
+	#Analyzer p { margin-bottom:0px; }
+	#Analyzer em { font-size:0.8em; }
+	#Results { display:none; padding:100px 0px; }
+	#Graph
+	{
+		height:200px;
+		width:400px;
+		background:#FFFFFF;
+		border:1px solid #000000;
+		border-top:none;
+		border-right:none;
+		position:relative;
+	}
+	.Bar { position:absolute;bottom:2px;left:0px;display:inline-block;color:#FFFFFF;}
+	.BarLabel { position:absolute;bottom:5px;width: 100%;text-align: center; }
+	#QuestionCounter { font-size:1.5em; }
+	#QuestionContainer { margin:25px 0px; }
+	#Explanation { text-align:left;width:80%; }
+</style>
+<body>
+	<div id="Intro">
+		<p><strong>Communication is hard.</strong></p>
+		<p>Most don't know that <em>different personalities prefer different styles of communication</em>.</p>
+		<p>Maybe you like passionate explanations, appeals to your emotions, data-driven facts - or maybe, you don't want the explanation - you just want to be told what needs to be done.</p>
+		<p>We also get motivated in different ways: Maybe you are self-motivated, socially-motivated, externally-motivated - or maybe, you get motivated through disagreement.</p>
+		<p>Knowing these differences help us navigate the different personalities.</p>
+		<p>An easy system to help is to divide personality types into colors.</p>
+		<p>Each color has particular traits, and it is helpful to understand how these traits work. It helps to psychologically understand people better, and also help your interactions.</p>
+		<p>There is no "best" color - and the truth is, our colors change depending on circumstances.</p>
+		<p>Knowing our baseline helps us know ourselves, and know how to navigate people who we otherwise just don't understand.</p>
+		<p>What follows are a set of terms. Rank them in order that most represents who you are. Some may be harder than others - that's ok. The important thing is you do your best to be honest with yourself.</p>
+		<button class="check" onclick="analyzer.Start();">Start</button>
+		<p>This assessment is free. No data - personal or otherwise, will be collected and stored.</p>
+		<p>All this code runs on <em>your</em> browser, no responses are saved to a server.</p>
+		<p>The only tracking is an anonymized Google Analytics tracker to enable traffic monitoring.</p>
+		<p><strong>It's also entirely open-source, and available <a href="" target="_blank">here.</a></strong></p>
+	</div>
+	<div id="Analyzer">
+		<p id="QuestionCounter"></p>
+		<em>Toggle each button in the order most representative of yourself.<br/>If you click one accidentally, just click the button again to undo.</em>
+		<div id="QuestionContainer"></div>
+		<div id="QuestionRanking"></div>
+		<button class="check" id="NextQuestion" onclick="analyzer.RenderNextQuestion();">&#10003;</button>
+	</div>
+	<div id="Results">
+		<p><strong>Your results:</strong></p>
+		<div id="Graph"></div>
+		<div id="Explanation"></div>
+	</div>
+</body>
+<script>
+var analyzer = {};
+analyzer.Questions = [];
+analyzer.Categories = [];
+analyzer.AddCategory = function(Label, Description, Dislikes, CommunicationTips, Color)
+{
+	var category = { Id:this.Categories.length, Label:Label, Description:Description, Dislikes:Dislikes, CommunicationTips:CommunicationTips, Score:0, Color:Color };
+	this.Categories.push(category);
+	return category;
+};
+
+
+
+analyzer.Define = function(definition)
+{
+	var question = [];
+	question.AddItem = function(Category, Label)
+	{
+		var item = { Category:Category, Label:Label, Ranking:0, Question:this };
+		item.Rank = function()
+		{
+			var maxRank = 0;
+			for(var i=0;i<this.Question.length;i++)
+			{
+				if (this.Question[i].Ranking>maxRank)
+				{
+					maxRank = this.Question[i].Ranking;
+				}
+			}
+			for(var i=0;i<this.Question.length;i++)
+			{
+				if (this.Question[i].Category==this.Category)
+				{
+					this.Question[i].Ranking = maxRank+1;
+				}
+			}
+			this.Question.RenderRankings();
+		};
+		item.Unrank = function()
+		{
+			for(var i=0;i<this.Question.length;i++)
+			{
+				if (this.Question[i].Ranking>this.Ranking)
+				{
+					this.Question[i].Ranking--;
+				}
+			}
+			this.Ranking = 0;
+			this.Question.RenderRankings();
+		}
+		this.push(item);
+	};
+	question.Render = function()
+	{
+		for(var i=0;i<this.length;i++)
+		{
+			var btn = document.createElement("button");
+			btn.Question = this;
+			btn.Item = this[i];
+			btn.Category = btn.Item.Category;
+			btn.innerHTML = btn.Item.Label;
+			btn.onclick = function()
+			{
+				this.Toggled = !this.Toggled;
+				this.className = this.Toggled? "checked" : "";
+				if(this.Toggled)
+				{
+					this.Item.Rank();
+				} else {
+					this.Item.Unrank();
+				}
+			};
+			document.getElementById('QuestionContainer').appendChild(btn);
+		}
+	};
+	question.RenderRankings = function()
+	{
+		var allRanked = true;
+		var sorted = this.sort((a, b) => (a.Ranking > b.Ranking) ? 1 : -1);
+		var code = '<ol>';
+		for(var i=0;i<sorted.length;i++)
+		{
+			if (sorted[i].Ranking>0)
+			{
+				code += '<li>'+sorted[i].Label+'</li>';
+			} else {
+				allRanked = false;
+			}
+		}
+		code += '</ol>';
+		document.getElementById('QuestionRanking').innerHTML = code;
+		document.getElementById('NextQuestion').disabled = !allRanked;
+	};
+	for (const category in definition)
+	{
+		question.AddItem(category, definition[category]);
+	}	
+	this.Questions.push(question);
+};
+analyzer.RenderNextQuestion = function()
+{
+	if (this.CurrentQuestion!=null)
+	{
+		//calculate score
+		var sorted = this.CurrentQuestion.sort((a, b) => (a.Ranking > b.Ranking) ? 1 : -1);
+		var output = "";
+		for(var i=0;i<sorted.length;i++)
+		{
+			this.Categories[sorted[i].Category].Score += (parseInt(this.Categories.length) - sorted[i].Ranking);
+			output += this.Categories[sorted[i].Category].Label+":"+this.Categories[sorted[i].Category].Score+", ";
+		}
+	}
+	
+	if (this.Questions.length==0)
+	{
+		var map = '';
+		for(var i=0;i<this.Categories.length;i++)
+		{
+			map += this.Categories[i].Id+':'+this.Categories[i].Score+';';
+		}
+		self.location.href = '#' + map;
+		
+		this.RenderGraph();
+		return false;
+	}
+	document.getElementById('QuestionContainer').innerHTML = "";
+	
+	var question = this.Questions.sort(() => Math.random() - 0.5).pop().sort(() => Math.random() - 0.5);
+	question.RenderRankings();
+	question.Render();
+	document.getElementById('QuestionCounter').innerHTML = 'Question #' + (this.NumQuestions - this.Questions.length) + ' of ' + this.NumQuestions;
+	this.CurrentQuestion = question;
+	return true;
+};
+analyzer.RenderGraph = function()
+{
+	document.getElementById('Graph').innerHTML = "";
+	var graphHeight = 200;
+	var graphWidth = 400;
+	
+	var margin = 10;
+	var categories = this.Categories.sort((a, b) => (a.Score < b.Score) ? 1 : -1);
+	var width = parseInt((graphWidth-(margin*categories.length)) / categories.length);
+	
+	var totalScore = 0;
+	var dominantCategory = false;
+	for(var i=0;i<categories.length;i++)
+	{
+		totalScore += categories[i].Score;
+		if (!dominantCategory || dominantCategory.Score<categories[i].Score)
+		{
+			dominantCategory = categories[i];
+		}
+	}
+	
+	var code = '';
+	var explanation_code = '<p>You are <strong style="color:'+dominantCategory.Color+'">'+dominantCategory.Label+'</strong>!</p>';
+	explanation_code += '<p>As you read the breakdown below, remember - while this is your <em>dominant</em> color, we may change and adjust to the situation. The other colors in your breakdown also play a factor in who you are and how you respond to situations.</p><br/><br/>';
+	var runningPct = 0;
+	for(var i=0;i<categories.length;i++)
+	{
+		if (categories[i].Score>0)
+		{
+			var pct = (Math.round(categories[i].Score/totalScore*100));
+			runningPct+=pct;
+			if (runningPct>100)
+			{
+				pct -= (runningPct-100);
+			}
+			code += '<div class="Bar" style="height:'+Math.round((graphHeight - margin) * categories[i].Score/dominantCategory.Score)+'px;width:'+width+'px;left:'+(i*(width+margin) + Math.round(margin/2)) +'px;background:'+categories[i].Color+'"><div class="BarLabel">'+pct+'%</div></div>';
+			explanation_code += '<p><strong style="color:'+categories[i].Color+'">'+categories[i].Label+':</strong><br/>'+categories[i].Description+'</p>';
+			explanation_code += '<p><strong>Dislikes: </strong>'+categories[i].Dislikes+'</p>';
+			explanation_code += '<p><strong>Tips when communicating with '+categories[i].Label+': </strong>'+categories[i].CommunicationTips+'</p><br/>';
+		}
+	}
+	document.getElementById('Graph').innerHTML = code;
+	document.getElementById('Explanation').innerHTML = explanation_code;
+	document.getElementById('Analyzer').style.display = "none";
+	document.getElementById('Results').style.display = "block";
+};
+
+analyzer.Start = function()
+{
+	document.getElementById('Intro').style.display = "none";
+	document.getElementById('Analyzer').style.display = "block";
+	document.getElementById('Results').style.display = "none";
+	this.RenderNextQuestion();
+};
+
+analyzer.Initialize = function()
+{
+	const category_questions = data_questions.split(/\r?\n/);
+	if (category_questions.length==0)
+	{
+		console.log("Data not loaded.");
+		return;
+	}
+	const categories_labels = category_questions[0].split('|');
+	
+	
+	var category_color_dictionary = [];
+	const category_colors = data_colors.split(/\r?\n/);
+	if (category_colors.length<1)
+	{
+		console.log("Data colors not complete.");
+		return;
+	}
+	const categories_colors_labels = category_colors[0].split('|');
+	const categories_colors_values = category_colors[1].split('|');
+	if (categories_colors_labels.length != categories_colors_values.length && categories_colors_labels.length != category_questions.length)
+	{
+		console.log("Data colors count mismatch.");
+		return;
+	}
+	for(var i=0;i<categories_colors_labels.length;i++)
+	{
+		category_color_dictionary[categories_colors_labels[i]] = categories_colors_values[i];
+	}
+	
+	var category_description_dictionary = [];
+	const category_descriptions = data_descriptions.split(/\r?\n/);
+	if (category_descriptions.length<1)
+	{
+		console.log("Data description not complete.");
+		return;
+	}
+	const categories_descriptions_labels = category_descriptions[0].split('|');
+	const categories_descriptions_values = category_descriptions[1].split('|');
+	if (categories_descriptions_labels.length != categories_descriptions_values.length && categories_descriptions_labels.length != category_questions.length)
+	{
+		console.log("Data description count mismatch.");
+		return;
+	}
+	for(var i=0;i<categories_descriptions_labels.length;i++)
+	{
+		category_description_dictionary[categories_descriptions_labels[i]] = categories_descriptions_values[i];
+	}
+	
+	var category_dislikes_dictionary = [];
+	const category_dislikes = data_dislikes.split(/\r?\n/);
+	if (category_dislikes.length<1)
+	{
+		console.log("Data dislikes not complete.");
+		return;
+	}
+	const categories_dislikes_labels = category_dislikes[0].split('|');
+	const categories_dislikes_values = category_dislikes[1].split('|');
+	if (categories_dislikes_labels.length != categories_dislikes_values.length && categories_dislikes_labels.length != category_questions.length)
+	{
+		console.log("Data dislikes count mismatch.");
+		return;
+	}
+	for(var i=0;i<categories_dislikes_labels.length;i++)
+	{
+		category_dislikes_dictionary[categories_dislikes_labels[i]] = categories_dislikes_values[i];
+	}
+	
+	var category_communication_tips_dictionary = [];
+	const category_communication_tips = data_communication_tips.split(/\r?\n/);
+	if (category_communication_tips.length<1)
+	{
+		console.log("Data tips not complete.");
+		return;
+	}
+	const categories_communication_tips_labels = category_communication_tips[0].split('|');
+	const categories_communication_tips_values = category_communication_tips[1].split('|');
+	if (categories_communication_tips_labels.length != categories_communication_tips_values.length && categories_communication_tips_labels.length != category_questions.length)
+	{
+		console.log("Data tips count mismatch.");
+		return;
+	}
+	for(var i=0;i<categories_communication_tips_labels.length;i++)
+	{
+		category_communication_tips_dictionary[categories_communication_tips_labels[i]] = categories_communication_tips_values[i];
+	}
+	
+	var categories = [];
+	for(var i=0;i<categories_labels.length;i++)
+	{
+		var category = this.AddCategory(categories_labels[i], category_description_dictionary[categories_labels[i]], category_dislikes_dictionary[categories_labels[i]], category_communication_tips_dictionary[categories_labels[i]], category_color_dictionary[categories_labels[i]]);
+		categories.push(category);
+	}
+	
+	for(var i=1;i<category_questions.length;i++)
+	{
+		const values = category_questions[i].split('|');
+		if (values.length>=categories.length)
+		{
+			var definition = {};
+			for(var j=0;j<categories.length;j++)
+			{
+				definition[categories[j].Id] = values[j];
+			}
+			this.Define(definition);
+		}
+	}
+	this.NumQuestions = this.Questions.length;
+};
+
+//ideally this would be a CSV
+const data_questions =
+`red dominant|yellow dominant|blue dominant|green dominant|purple dominant
+likes being straightforward|likes involvement|likes to analyze|likes organization|likes to surprise
+dictatorial|verbose|easily offended|stubborn|disruptive
+demanding|nurturing|quiet|persistent|marches to the beat of their own drum
+takes charge|likes to brainstorm|resists change|joiner|loves change
+active|harmonious|overgenerous|cautious|energetic
+outspoken|caring|mild-mannered|steadfast|catch you off guard
+forceful|believable|possessive|disciplined|seeks novelty
+results|playful|idealist|dutiful|daring
+audacious|friendly|logical|contented|bold
+dive right in|let's all agree|let's look at the data|let me know what you think|let's surprise them
+charismatic|life of the party|insightful|reserved|center of attention
+authoritative|optimistic|independent|traditional|unconventional
+restless|talkative|modest|conscientious|care-free
+leader|counsellor|plannner|implementer|questioner
+workaholic|supportive|self-directed|meticulous|most interested at the beginning
+loves conclusions|loves the journey|loves patterns|loves nuance|loves novelty
+industrious|positive thinker|mental imager|attentive to details|attentive to impact
+goal-oriented|people-oriented|numbers-oriented|task-oriented|idea-oriented
+likes recognition|likes socializing|likes time|likes solitude|likes a reaction
+let's just get it done|be creative|research|if it ain't broke, don't fix it.|let's break the mold
+irritable|easily hurt|easily slighted|rigid|writes you off
+candid|careful with feelings|factual|blunt|moves on quickly
+result-oriented|culture-oriented|data-oriented|schedule-oriented|experiment-oriented
+excels in crisis|excels in building a sense of community|excels in analysis|excels in accuracy|excels in originality
+likes leading|likes compliments|likes a job well done|likes results to speak for themselves|likes a (brief) spotlight
+strong willed|enthusiastic|likes watching people|likes high standards|dislikes repetition
+very self-assured|eccentric|cautious, even with friends|thorough and neat|breaks status quo
+usually right|usually happy|avoids conflict|organized|flies solo
+self-confident|trusting|sensitive|structured|attention-seeking
+spontaneous|checks with others|dreamer|analytical|looking for how people respond`;
+
+const data_colors =
+`red dominant|yellow dominant|blue dominant|green dominant|purple dominant
+#CC0000|#DDDD00|#0000CC|#00CC33|#9933FF`
+
+const data_descriptions =
+`red dominant|yellow dominant|blue dominant|green dominant|purple dominant
+Red Dominant personalities prefer being leaders, or active and visible roles. They are confident and proud of the work they produce and get the spotlight (though they may not be actively seeking it.) CEOs, Politicians, Frontmen to Bands are stereotypically 'red dominant' because they are decisive, and want to take action. They are specific and direct with language.|Yellow Dominant personalities are expressive and in-touch with their emotions (not to be confused with "being emotional.") They enjoy brainstorming, and being around others. They crave the spotlight and like being complimented for their creativity and ideas. Being isolated is more of a challenge, and when they're in groups they can sense when someone is unhappy. When they lead, they like for everyone to understand the purpose and meaning for what is being done.|Blue dominant personalities are data-driven deep thinkers. They are analytical and precise. They may be more introverted - but more specifically, they prefer to have their space in order to focus. They are very organized, punctual and methodical. They take fewer risks because they care about data and patterns. They may either outright dislike or completely avoid arguments that touch on emotions and feelings, and just want facts. This may sometimes create the impression they are "cold" but the reality is they are adept at separating emotion from action. They are very logical and deliberate.|Green dominant personalities are more relaxed and patient. They prefer to be part of strong teams but may avoid leading. They want to be recognized for their work. They are easy to get along with and are social yet introverted. They are understanding and agreeable, and great facilitators. They are reasonable and aid through conflict. They may have the tendency to say 'yes' when they truly mean 'no.' Their body language and attitude will show their truly feeling which may not line up with what they are expressing. They take their time with things and take a democratic approach. They seek consensus. They like to read people and can detect insincerity.|Purple dominant personalities enjoy leadership but in an indirect way. They like to "save the day" and like to surprise people with results. They may not always discuss their thoughts until the end of a discussion, or may not discuss what they are working on until it's ready to see. Reactionsa important to them. They dislike doing things the same way. They like to break the status quo, and find new and disruptive ways. They like to be bold and ambitious, and tell it like it is. Sometimes they may overstep. They seek affirmation but do so subtely. They want their work to be appreciated but are also humble. They like to take a rebel approach - they don't like to be given specific instructions on how to do things, and prefer to find their own path. In fact, they may have knee jerk reactions or struggle when told exactly what to do. They enjoy being in groups, enjoy being social, but may create the impression of being absent.`
+
+const data_dislikes =
+`red dominant|yellow dominant|blue dominant|green dominant|purple dominant
+Ambiguity. Wafflers. Don't be vague. Don't ramble on. They value time, so be careful about wasting there's. Red Dominants separate relationships from action. Don't take what they say personally, don't stray from purpose. Avoid irrelevant questions. They are natural leaders and like to be in control.|Having their opinions suppressed, emotions ignores, or not being taking seriously. They have a high EQ, and are very social. They don't like people being impersonal, business-like or task orientated. Don't inhibit their creativity, or appear aloof or detached.|Disorganization. Try not to be late as they are sticklers for time keeping. Try not to be flippant or pushy with them. They don't like vagueness so make sure you have lots of detail and be prepared to have lots of questions thrown at you. Don't use testimonials or exaggerate claims as they do not fall for this, they are more facts and figures orientated. Avoid emotional arguments, as they will avoid emotions.|Insincerity. Don't be pushy or put them on a spot. Don't dominate the discussion or rush things. Avoid deciding for them. Don't be abrupt. Do not make wild claims, senationalize or embelish.|Very specific instructions. Details that don't allow them to express their creativity/rebellious nature. Doing things the same way. Not being given the room to experiment and try new things. Dislike not seeing reactions to results they produce.
+`
+
+const data_communication_tips =
+`red dominant|yellow dominant|blue dominant|green dominant|purple dominant
+Be succinct and precise, give facts, and avoid detail, avoid narratives, avoid subjectivity. Focus on results and outcomes, they need to hear this to make quick decisions. Use their time efficiently, they are fast paced thinkers and tend to move quickly in their thoughts. They are great people to bounce ideas off, but want people to do their own prep-work.|Be present. Socialise before mentioning any business. Be sure to address their feelings, passion, motivations and purpose. Brainstorm, talk about options. Be enthusiastic and energetic when conveying your ideas over to them and be fast paced in delivering them. Offer your ideas and importantly use humour when doing so being sociable and acknowledge their input. Make them feel appreciated. Externalize your praise.|Be well prepared, get into detail as they love to get all the facts in their mind. Be factual, specific and logical with your approach. Listening is important too. Listen carefully to what they have to say, as they verbalise their thoughts through questioning thoroughly. Give them time to respond and respect their silence. Be formal in your approach as they are very businesslike.|Be friendly and show genuine interest. Chat before going into business. It is important to develop trust first, be informal and nonthreatening. However, be alert for non-verbal signs of concern, remember they say yes but may mean no. Their body language will make this clear. If you notice any non-verbal signs, uncover their needs with open questions. Allow them to weigh things up for themselves.|Express the challenges and difficulty, provide your thoughts but give them space to be creative. When they tell you their ideas, show appreciation for their ideas - and be careful if their idea has already been tried. Don't be dismissive, but be supportive. They are brainstormers and want to surprise you with results.
+`
+
+window.addEventListener('load', function() {
+
+  analyzer.Initialize();
+  var currentUrl = document.URL;
+  if (currentUrl.indexOf('#')<0)
+  {
+	return;
+  }
+  var urlParts = currentUrl.split('#');
+  var map = urlParts[1];
+  var mapPieces = map.split(';');
+  
+  if (mapPieces.length < analyzer.Categories.length)
+  {
+	return;
+  }
+  
+  var map_dictionary = [];
+  for(var i=0;i<mapPieces.length;i++)
+  {
+	var mapping = mapPieces[i].split(':');
+	if (mapping.length==2)
+	{
+		map_dictionary[parseInt(mapping[0])] = parseInt(mapping[1]);
+	}
+  }
+  
+for(var i=0;i<analyzer.Categories.length;i++)
+{
+	analyzer.Categories[i].Score = map_dictionary[analyzer.Categories[i].Id];
+}
+analyzer.Start();
+analyzer.RenderGraph();
+});
+
+</script>
+</html>
