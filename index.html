@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
-<title>Personality Spectrum</title>
+<title>personality spectrum</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
-<meta property="og:title" content="Personality Spectrum" />
+<meta property="og:title" content="personality spectrum" />
 <meta property="og:description" content="communication is hard. with a simple system, it doesn't have to be." />
 <meta property="og:image" content="http://www.alishahnovin.com/personalityspectrum/preview.png" />
+<meta property="og:image:alt" content="communication is hard. with a simple system, it doesn't have to be." />
 <meta property="og:url" content="http://www.alishahnovin.com/personalityspectrum" />
 <style>
 	body { font-family: 'Montserrat', sans-serif;
@@ -43,7 +44,7 @@
 	button.check:active { background:#009966; }
 	button.check:disabled { background:#CCCCCC;display:none; }
 	ol { text-align:left; display: inline-block; font-size:1.0em; margin-bottom:35px; }
-	#Intro { width:50%; padding-top:50px; }
+	#Intro { width:50%; padding-top:25px; }
 	#Intro p { font-size:1.1em;text-align:left; }
 	
 	#Analyzer { display:none; padding-top:100px; }
@@ -82,7 +83,7 @@
 		<p>This assessment is free. No data - personal or otherwise, will be collected and stored.</p>
 		<p>All this code runs on <em>your</em> browser, no responses are saved to a server.</p>
 		<p>The only tracking is an anonymized Google Analytics tracker to enable traffic monitoring.</p>
-		<p><strong>It's also entirely open-source, and available <a href="" target="_blank">here.</a></strong></p>
+		<p><strong>It's also entirely open-source, and available <a href="https://github.com/alishahnovin/personalityspectrum" target="_blank">here.</a></strong></p>
 	</div>
 	<div id="Analyzer">
 		<p id="QuestionCounter"></p>
@@ -107,8 +108,6 @@ analyzer.AddCategory = function(Label, Description, Dislikes, CommunicationTips,
 	this.Categories.push(category);
 	return category;
 };
-
-
 
 analyzer.Define = function(definition)
 {
