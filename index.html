@@ -259,11 +259,12 @@ analyzer.RenderGraph = function()
 	{
 		if (categories[i].Score>0)
 		{
-			var pct = (Math.round(categories[i].Score/totalScore*100));
+			var pct = (Math.round((categories[i].Score/totalScore)*1000)/10);
 			runningPct+=pct;
 			if (runningPct>100)
 			{
 				pct -= (runningPct-100);
+				pct = (Math.round(pct*10)/10);
 			}
 			code += '<div class="Bar" style="height:'+Math.round((graphHeight - margin) * categories[i].Score/dominantCategory.Score)+'px;width:'+width+'px;left:'+(i*(width+margin) + Math.round(margin/2)) +'px;background:'+categories[i].Color+'"><div class="BarLabel">'+pct+'%</div></div>';
 		}
